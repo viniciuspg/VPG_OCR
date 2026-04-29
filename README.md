@@ -1,6 +1,6 @@
 # VPG_OCR
 
-**VPG_OCR** é um kit organizado para instalação e uso de OCR em PDFs no Windows, com foco em usuários não técnicos.
+**VPG_OCR é um kit organizado para aplicação de OCR em PDFs no Windows, com foco em simplicidade de instalação e uso. O projeto inclui instalação por 1 clique, execução por 1 clique, OCR simples, otimizado e em lote, além de suporte a arquivos auxiliares para melhorar o reconhecimento de termos recorrentes e gerar PDFs pesquisáveis.
 
 ## Estrutura
 
