@@ -1,58 +1,18 @@
 VPG_OCR - LEIA-ME
 
-Este kit foi organizado para facilitar a instalação e o uso, mesmo por usuários não técnicos.
-
-ESTRUTURA FINAL DA PASTA VPG_OCR
-
-VPG_OCR\
-├── 0_LEIA-ME.txt
-├── README.md
-├── LICENSE
-├── THIRD_PARTY_NOTICES.txt
-├── .gitignore
-├── 1_instalacao\
-│   ├── 🛠️_CLIQUE_AQUI_PARA_INSTALAR.bat
-│   ├── arquivos\
-│   │   ├── tesseract-ocr-w64-setup-5.5.0.20241111.exe  (instalador principal)
-│   │   ├── tesseract-ocr-w64-setup-5.4.0.20240606.exe  (instalador de backup)
-│   │   └── por.traineddata
-│   └── script_instalacao\
-│       └── instalacao_OCR.py
-├── 2_utilizacao\
-│   ├── 🚀_CLIQUE_AQUI_PARA_USAR_OCR.bat
-│   ├── ENTRADA_coloque_aqui_seus_pdfs\
-│   ├── SAIDA_pdfs_processados\
-│   └── scripts_OCR\
-│       ├── 5_OCR_MENU.py
-│       ├── user-words.txt
-│       └── user-patterns.txt
-└── 3_obsoleto_bkp\
-
 1) COMO INSTALAR NO COMPUTADOR
+
 - Abra 1_instalacao e clique em 🛠️_CLIQUE_AQUI_PARA_INSTALAR.bat.
+- Se o Windows mostrar a janela de segurança do arquivo .bat, clique em EXECUTAR.
+  Se desejar, marque a opção para não mostrar novamente.
+- Se o Python não estiver instalado, o instalador tentará instalar automaticamente o Python 3.14 usando winget.
+- Quando a janela do instalador do Tesseract abrir, selecione o idioma do instalador como: English.
+- Depois siga normalmente os passos até concluir.
+- O instalador também tentará ajustar automaticamente o PATH do Windows para o Tesseract.
 
 2) COMO USAR O OCR
+
 - Abra 2_utilizacao.
 - Coloque os PDFs em ENTRADA_coloque_aqui_seus_pdfs.
 - Clique em 🚀_CLIQUE_AQUI_PARA_USAR_OCR.bat.
 - Os arquivos processados irão para SAIDA_pdfs_processados.
-
-3) SOBRE user-words.txt E user-patterns.txt
-- O programa usa automaticamente esses dois arquivos, se existirem e tiverem conteúdo.
-- Edite user-words.txt para adicionar palavras corretas recorrentes (nomes próprios, lugares, algarismos romanos, siglas).
-- Edite user-patterns.txt para adicionar padrões úteis e conservadores.
-- Faça uma linha por item.
-
-4) MENU DISPONÍVEL
-1 = OCR simples (1 PDF por vez)
-2 = OCR otimizado (1 PDF por vez)
-3 = OCR em lote (vários PDFs)
-4 = OCR em lote otimizado (vários PDFs)
-5 = Re-OCR (1 PDF por vez)
-6 = Forçar OCR em tudo (1 PDF por vez)
-0 = Sair
-
-5) DISTRIBUIÇÃO
-- Este pacote já está preparado para ser enviado ao GitHub.
-- Recomenda-se versionar seus scripts, documentação e arquivos de licença.
-- Antes de publicar binários de terceiros (.exe/.traineddata), revise os termos aplicáveis e mantenha os avisos de terceiros.
