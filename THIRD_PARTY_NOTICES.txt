@@ -1,0 +1,23 @@
+THIRD-PARTY NOTICES
+
+Este projeto (VPG_OCR) é um wrapper/conjunto de scripts para facilitar a instalação e o uso de OCR.
+
+Componentes de terceiros relevantes:
+
+1) Tesseract OCR
+- Projeto oficial: tesseract-ocr/tesseract
+- Licença informada pelo projeto: Apache License 2.0
+- Observação prática: ao redistribuir o software/licenças de terceiros, mantenha os avisos e a licença aplicável.
+
+2) Arquivos .traineddata (ex.: por.traineddata)
+- Repositório oficial: tesseract-ocr/tessdata
+- Licença informada pelo repositório: Apache License 2.0
+- Observação prática: ao redistribuir os arquivos treinados, mantenha os avisos e a licença aplicável.
+
+3) OCRmyPDF
+- Instalação realizada via pip pelo script de instalação.
+- Verifique no ambiente de distribuição os metadados/licença da versão efetivamente instalada.
+
+Observação importante:
+- Os binários/instaladores de terceiros não estão versionados neste pacote por padrão.
+- Antes de publicar instaladores .exe de terceiros em um repositório público, revise os termos de redistribuição da fonte do binário que você estiver usando.

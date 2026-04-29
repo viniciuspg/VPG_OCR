@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OCR outputs
+2_utilizacao/SAIDA_pdfs_processados/*
+!2_utilizacao/SAIDA_pdfs_processados/.gitkeep
+
+# Input PDFs
+2_utilizacao/ENTRADA_coloque_aqui_seus_pdfs/*
+!2_utilizacao/ENTRADA_coloque_aqui_seus_pdfs/.gitkeep
+
+# Local third-party installers (keep out of repo by default)
+1_instalacao/arquivos/*.exe
+1_instalacao/arquivos/*.traineddata
+!1_instalacao/arquivos/COLOQUE_AQUI_OS_ARQUIVOS_DE_INSTALACAO.txt
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1 @@
+Pasta opcional para guardar cópias antigas. Pode ser apagada.
