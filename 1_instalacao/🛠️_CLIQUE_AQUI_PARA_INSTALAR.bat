@@ -12,7 +12,7 @@ echo 1. Se o Windows mostrar a janela de seguranca deste arquivo .bat,
 echo    clique em EXECUTAR.
 echo 2. Se desejar, marque a opcao para nao mostrar novamente.
 echo 3. Se o Python nao estiver instalado, o instalador tentara instalar
-ECHO    automaticamente o Python 3.14 usando winget.
+echo    automaticamente o Python 3.14 usando winget.
 echo.
 
 where py >nul 2>&1

@@ -28,10 +28,8 @@ def print_header(titulo):
     print('=' * 68)
 
 
-def run_command(cmd, check=True, capture=False):
+def run_command(cmd, check=True):
     print('>> ' + ' '.join(str(c) for c in cmd))
-    if capture:
-        return subprocess.run(cmd, check=check, capture_output=True, text=True)
     return subprocess.run(cmd, check=check)
 
 
@@ -100,23 +98,12 @@ def add_directory_to_system_path(directory: Path):
         if path_str.lower() not in lower_parts:
             new_path = current_path.rstrip(';') + ';' + path_str if current_path else path_str
             winreg.SetValueEx(key, 'Path', 0, reg_type, new_path)
-            # atualiza sessao atual do processo
             os.environ['PATH'] = path_str + ';' + os.environ.get('PATH', '')
-            # avisa o Windows que o ambiente mudou
             HWND_BROADCAST = 0xFFFF
             WM_SETTINGCHANGE = 0x001A
             SMTO_ABORTIFHUNG = 0x0002
-            ctypes.windll.user32.SendMessageTimeoutW(
-                HWND_BROADCAST,
-                WM_SETTINGCHANGE,
-                0,
-                'Environment',
-                SMTO_ABORTIFHUNG,
-                5000,
-                None,
-            )
+            ctypes.windll.user32.SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, 'Environment', SMTO_ABORTIFHUNG, 5000, None)
             return True
-    # mesmo se ja existia, garante sessao atual
     os.environ['PATH'] = path_str + ';' + os.environ.get('PATH', '')
     return False
 
@@ -128,14 +115,6 @@ def copy_portuguese_language(src_por: Path, tesseract_dir: Path):
     destino = tessdata / 'por.traineddata'
     shutil.copy2(src_por, destino)
     print(f'Arquivo copiado para: {destino}')
-
-
-def verify_command_available(cmd):
-    try:
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return True
-    except Exception:
-        return False
 
 
 def validate_installation():
@@ -186,32 +165,27 @@ def main():
         print('ERRO: não encontrei o arquivo por.traineddata na subpasta arquivos.')
         sys.exit(1)
 
-    try:
-        install_ocrmypdf()
-        install_tesseract(installer, backups)
-        time.sleep(2)
+    install_ocrmypdf()
+    install_tesseract(installer, backups)
+    time.sleep(2)
 
-        tesseract_dir = detect_tesseract_dir()
-        if not tesseract_dir:
-            print('ERRO: não foi possível localizar a pasta do Tesseract após a instalação.')
-            print('Verifique se a instalação do Tesseract foi concluída corretamente.')
-            sys.exit(1)
-
-        print_header('2.1) Ajustando PATH do Windows para o Tesseract')
-        mudou = add_directory_to_system_path(tesseract_dir)
-        if mudou:
-            print(f'Pasta adicionada ao PATH do sistema: {tesseract_dir}')
-        else:
-            print(f'Pasta já estava no PATH do sistema: {tesseract_dir}')
-
-        copy_portuguese_language(por_file, tesseract_dir)
-        validate_installation()
-
-        print_header('INSTALAÇÃO CONCLUÍDA')
-        print('Próximo passo: abra a pasta 2_utilizacao e clique em 🚀_CLIQUE_AQUI_PARA_USAR_OCR.bat.')
-    except Exception as e:
-        print(f'ERRO durante a instalação: {e}')
+    tesseract_dir = detect_tesseract_dir()
+    if not tesseract_dir:
+        print('ERRO: não foi possível localizar a pasta do Tesseract após a instalação.')
         sys.exit(1)
+
+    print_header('2.1) Ajustando PATH do Windows para o Tesseract')
+    mudou = add_directory_to_system_path(tesseract_dir)
+    if mudou:
+        print(f'Pasta adicionada ao PATH do sistema: {tesseract_dir}')
+    else:
+        print(f'Pasta já estava no PATH do sistema: {tesseract_dir}')
+
+    copy_portuguese_language(por_file, tesseract_dir)
+    validate_installation()
+
+    print_header('INSTALAÇÃO CONCLUÍDA')
+    print('Próximo passo: abra a pasta 2_utilizacao e clique em 🚀_CLIQUE_AQUI_PARA_USAR_OCR.bat.')
 
 
 if __name__ == '__main__':

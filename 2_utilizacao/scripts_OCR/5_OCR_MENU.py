@@ -8,7 +8,7 @@ PASTA_ENTRADA = "ENTRADA_coloque_aqui_seus_pdfs"
 PASTA_SAIDA = "SAIDA_pdfs_processados"
 ARQ_USER_WORDS = "user-words.txt"
 ARQ_USER_PATTERNS = "user-patterns.txt"
-SUFIXOS_PROCESSADOS = ("_OCR", "_OCR_OTIM", "_OCR_REDO", "_OCR_FORCE")
+SUFIXOS_PROCESSADOS = ("_OCR", "_OCR_OTIM", "_OCR_REDO", "_OCR_FORCE", "_OCR_HIST")
 
 
 def verificar_ocrmypdf():
@@ -66,63 +66,114 @@ def listar_pdfs_originais(pasta_entrada: Path):
     return sorted([p for p in pasta_entrada.glob("*.pdf") if not pdf_ja_processado(p)])
 
 
-def montar_comando(entrada: Path, saida: Path, pasta_scripts: Path, modo: str = "skip", otimizar: bool = False):
+def montar_comando(entrada: Path, saida: Path, pasta_scripts: Path, *, modo: str = "skip", otimizar: bool = False,
+                   usar_patterns: bool = True, jobs: int | None = None, historico: bool = False):
     comando = [sys.executable, "-m", "ocrmypdf", "-l", "por", "--mode", modo]
 
-    # --deskew NÃO é compatível com --mode redo
     if modo != "redo":
         comando.append("--deskew")
+
+    if historico:
+        comando.append("--rotate-pages")
 
     if otimizar:
         comando.extend(["--optimize", "3"])
 
+    if jobs:
+        comando.extend(["--jobs", str(jobs)])
+
     user_words, user_patterns = obter_arquivos_auxiliares(pasta_scripts)
     if user_words:
         comando.extend(["--user-words", str(user_words)])
-    if user_patterns:
+    if usar_patterns and user_patterns:
         comando.extend(["--user-patterns", str(user_patterns)])
 
     comando.extend([str(entrada), str(saida)])
-    return comando, user_words, user_patterns
+    return comando, user_words, (user_patterns if usar_patterns else None)
 
 
-def processar_arquivo(arquivo_entrada: Path, pasta_saida: Path, pasta_scripts: Path, modo: str = "skip", otimizar: bool = False):
+def _sufixo_saida(modo: str, otimizar: bool = False, historico: bool = False):
+    if historico:
+        return "_OCR_HIST.pdf"
     if modo == "skip" and otimizar:
-        sufixo_saida = "_OCR_OTIM.pdf"
-    elif modo == "skip":
-        sufixo_saida = "_OCR.pdf"
-    elif modo == "redo":
-        sufixo_saida = "_OCR_REDO.pdf"
-    elif modo == "force":
-        sufixo_saida = "_OCR_FORCE.pdf"
-    else:
-        raise ValueError("Modo inválido")
+        return "_OCR_OTIM.pdf"
+    if modo == "skip":
+        return "_OCR.pdf"
+    if modo == "redo":
+        return "_OCR_REDO.pdf"
+    if modo == "force":
+        return "_OCR_FORCE.pdf"
+    raise ValueError("Modo inválido")
 
+
+def executar_comando(comando, arquivo_saida: Path, desc_tentativa: str):
+    print(f"[TENTATIVA]  {desc_tentativa}")
+    print(f"[COMANDO]    {' '.join(str(c) for c in comando)}")
+    try:
+        subprocess.run(comando, check=True)
+        print(f"[OK] Arquivo gerado: {arquivo_saida.name}")
+        return "ok"
+    except subprocess.CalledProcessError as e:
+        print(f"[ERRO] Falha (código {e.returncode})")
+        return f"erro:{e.returncode}"
+    except Exception as e:
+        print(f"[ERRO] Falha inesperada: {e}")
+        return "erro:unexpected"
+
+
+def processar_arquivo(arquivo_entrada: Path, pasta_saida: Path, pasta_scripts: Path, *, modo: str = "skip",
+                      otimizar: bool = False, historico: bool = False):
+    sufixo_saida = _sufixo_saida(modo, otimizar=otimizar, historico=historico)
     arquivo_saida = pasta_saida / f"{arquivo_entrada.stem}{sufixo_saida}"
     if arquivo_saida.exists():
         print(f"[PULADO] Saída já existe: {arquivo_saida.name}")
         return "pulado"
-
-    comando, user_words, user_patterns = montar_comando(arquivo_entrada, arquivo_saida, pasta_scripts, modo=modo, otimizar=otimizar)
 
     print(f"\n[PROCESSANDO] {arquivo_entrada.name}")
     print(f"[ENTRADA]     {arquivo_entrada}")
     print(f"[SAÍDA]       {arquivo_saida}")
     print(f"[MODO]        {modo}")
     print(f"[OTIMIZAÇÃO]  {'Sim' if otimizar else 'Não'}")
+    print(f"[HISTÓRICO]   {'Sim' if historico else 'Não'}")
+
+    tentativas = []
+    usar_patterns_inicial = not historico
+    jobs_inicial = 1 if historico else None
+
+    comando, user_words, user_patterns = montar_comando(
+        arquivo_entrada, arquivo_saida, pasta_scripts,
+        modo=modo, otimizar=otimizar, usar_patterns=usar_patterns_inicial,
+        jobs=jobs_inicial, historico=historico
+    )
     print(f"[USER-WORDS]  {user_words.name if user_words else 'não utilizado'}")
     print(f"[PATTERNS]    {user_patterns.name if user_patterns else 'não utilizado'}")
+    tentativas.append((comando, f"normal{' histórico' if historico else ''}"))
 
-    try:
-        subprocess.run(comando, check=True)
-        print(f"[OK] Arquivo gerado: {arquivo_saida.name}")
-        return "ok"
-    except subprocess.CalledProcessError as e:
-        print(f"[ERRO] Falha ao processar {arquivo_entrada.name} (código {e.returncode})")
-        return "erro"
-    except Exception as e:
-        print(f"[ERRO] Falha inesperada em {arquivo_entrada.name}: {e}")
-        return "erro"
+    if user_patterns is not None and usar_patterns_inicial:
+        comando2, _, _ = montar_comando(
+            arquivo_entrada, arquivo_saida, pasta_scripts,
+            modo=modo, otimizar=otimizar, usar_patterns=False,
+            jobs=jobs_inicial, historico=historico
+        )
+        tentativas.append((comando2, "fallback sem user-patterns"))
+
+    if modo == "force" or historico:
+        comando3, _, _ = montar_comando(
+            arquivo_entrada, arquivo_saida, pasta_scripts,
+            modo=modo, otimizar=otimizar, usar_patterns=False,
+            jobs=1, historico=historico
+        )
+        if all(tuple(cmd) != tuple(comando3) for cmd, _ in tentativas):
+            tentativas.append((comando3, "fallback sem user-patterns e com --jobs 1"))
+
+    ultimo = None
+    for comando, desc in tentativas:
+        ultimo = executar_comando(comando, arquivo_saida, desc)
+        if ultimo == "ok":
+            return "ok"
+
+    print(f"[ERRO FINAL] Não foi possível processar {arquivo_entrada.name} após as tentativas automáticas.")
+    return ultimo if ultimo else "erro"
 
 
 def validar_dependencias(precisa_pngquant=False):
@@ -146,7 +197,8 @@ def validar_dependencias(precisa_pngquant=False):
     return True
 
 
-def modo_um_pdf(pasta_entrada: Path, pasta_saida: Path, pasta_scripts: Path, modo: str = "skip", otimizar: bool = False):
+def modo_um_pdf(pasta_entrada: Path, pasta_saida: Path, pasta_scripts: Path, *, modo: str = "skip",
+                otimizar: bool = False, historico: bool = False):
     pdfs = listar_pdfs_originais(pasta_entrada)
     if not pdfs:
         print("ERRO: nenhum PDF original encontrado na pasta de entrada.")
@@ -159,10 +211,11 @@ def modo_um_pdf(pasta_entrada: Path, pasta_saida: Path, pasta_scripts: Path, mod
         for pdf in pdfs:
             print(f" - {pdf.name}")
         return
-    processar_arquivo(pdfs[0], pasta_saida, pasta_scripts, modo=modo, otimizar=otimizar)
+    processar_arquivo(pdfs[0], pasta_saida, pasta_scripts, modo=modo, otimizar=otimizar, historico=historico)
 
 
-def modo_lote(pasta_entrada: Path, pasta_saida: Path, pasta_scripts: Path, modo: str = "skip", otimizar: bool = False):
+def modo_lote(pasta_entrada: Path, pasta_saida: Path, pasta_scripts: Path, *, modo: str = "skip",
+              otimizar: bool = False, historico: bool = False):
     pdfs = listar_pdfs_originais(pasta_entrada)
     if not pdfs:
         print("Nenhum PDF original encontrado para processar na pasta de entrada.")
@@ -173,7 +226,7 @@ def modo_lote(pasta_entrada: Path, pasta_saida: Path, pasta_scripts: Path, modo:
         print(f" - {pdf.name}")
     total_ok = total_pulados = total_erros = 0
     for pdf in pdfs:
-        resultado = processar_arquivo(pdf, pasta_saida, pasta_scripts, modo=modo, otimizar=otimizar)
+        resultado = processar_arquivo(pdf, pasta_saida, pasta_scripts, modo=modo, otimizar=otimizar, historico=historico)
         if resultado == "ok":
             total_ok += 1
         elif resultado == "pulado":
@@ -198,10 +251,12 @@ def mostrar_menu():
     print("5 = Re-OCR (1 PDF por vez) [usa --mode redo]")
     print("6 = Forçar OCR em tudo (1 PDF por vez) [usa --mode force]")
     print("7 = Forçar OCR em tudo (lote) [usa --mode force]")
+    print("8 = OCR histórico (1 PDF por vez) [force + rotate-pages + jobs 1 + sem patterns]")
+    print("9 = OCR histórico em lote [force + rotate-pages + jobs 1 + sem patterns]")
     print("0 = Sair")
     print("=" * 68)
-    print("Dica: se o OCR errar nomes próprios, algarismos romanos ou termos recorrentes,")
-    print("edite os arquivos user-words.txt e user-patterns.txt na pasta scripts_OCR.")
+    print("Dica: user-words.txt é recomendado para nomes próprios e termos recorrentes.")
+    print("Dica: user-patterns.txt é EXPERIMENTAL e pode ser ignorado automaticamente se atrapalhar.")
     print("=" * 68)
 
 
@@ -238,7 +293,15 @@ def main():
         elif opcao == "7" and validar_dependencias(False):
             print("Use esta opção apenas quando quiser rasterizar todo o PDF e aplicar OCR em tudo, em lote.")
             modo_lote(pasta_entrada, pasta_saida, pasta_scripts, modo="force", otimizar=False)
-        elif opcao not in {"1","2","3","4","5","6","7","0"}:
+        elif opcao == "8" and validar_dependencias(False):
+            print("Use esta opção para documentos históricos impressos/datilografados e casos mais difíceis.")
+            print("O script usará force, rotate-pages, jobs 1 e user-patterns desativado por padrão.")
+            modo_um_pdf(pasta_entrada, pasta_saida, pasta_scripts, modo="force", otimizar=False, historico=True)
+        elif opcao == "9" and validar_dependencias(False):
+            print("Use esta opção para documentos históricos impressos/datilografados e casos mais difíceis, em lote.")
+            print("O script usará force, rotate-pages, jobs 1 e user-patterns desativado por padrão.")
+            modo_lote(pasta_entrada, pasta_saida, pasta_scripts, modo="force", otimizar=False, historico=True)
+        elif opcao not in {"1","2","3","4","5","6","7","8","9","0"}:
             print("Opção inválida. Tente novamente.")
 
 if __name__ == '__main__':

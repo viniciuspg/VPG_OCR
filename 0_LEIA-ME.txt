@@ -1,18 +1,38 @@
 VPG_OCR - LEIA-ME
 
-1) COMO INSTALAR NO COMPUTADOR
+Este kit foi organizado para facilitar a instalação e o uso no Windows, inclusive por usuários não técnicos.
 
+1) COMO INSTALAR NO COMPUTADOR
 - Abra 1_instalacao e clique em 🛠️_CLIQUE_AQUI_PARA_INSTALAR.bat.
 - Se o Windows mostrar a janela de segurança do arquivo .bat, clique em EXECUTAR.
-  Se desejar, marque a opção para não mostrar novamente.
 - Se o Python não estiver instalado, o instalador tentará instalar automaticamente o Python 3.14 usando winget.
 - Quando a janela do instalador do Tesseract abrir, selecione o idioma do instalador como: English.
 - Depois siga normalmente os passos até concluir.
 - O instalador também tentará ajustar automaticamente o PATH do Windows para o Tesseract.
 
 2) COMO USAR O OCR
-
 - Abra 2_utilizacao.
 - Coloque os PDFs em ENTRADA_coloque_aqui_seus_pdfs.
 - Clique em 🚀_CLIQUE_AQUI_PARA_USAR_OCR.bat.
 - Os arquivos processados irão para SAIDA_pdfs_processados.
+
+3) user-words.txt e user-patterns.txt
+- user-words.txt: recomendado para nomes próprios, lugares, siglas e termos recorrentes.
+- user-patterns.txt: recurso experimental. O script pode ignorá-lo automaticamente se ele atrapalhar o OCR.
+
+4) MENU DISPONÍVEL
+1 = OCR simples (1 PDF por vez)
+2 = OCR otimizado (1 PDF por vez)
+3 = OCR em lote (vários PDFs)
+4 = OCR em lote otimizado (vários PDFs)
+5 = Re-OCR (1 PDF por vez)
+6 = Forçar OCR em tudo (1 PDF por vez)
+7 = Forçar OCR em tudo (lote)
+8 = OCR histórico (1 PDF por vez)
+9 = OCR histórico em lote
+0 = Sair
+
+5) SOBRE O MODO 8 E O MODO 9
+- Os modos 8 e 9 foram pensados para documentos históricos impressos ou datilografados.
+- Eles usam force, rotate-pages, jobs 1 e user-patterns desativado por padrão.
+- Também tentam novamente sem patterns e com jobs 1 caso ocorra erro em arquivos difíceis.
